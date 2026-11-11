@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<widget id="id.tulia.jadwal" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+  <name>Tulia Jadwal</name>
+  <description>Aplikasi notepad dengan fitur jadwal dan notifikasi</description>
+  <author email="developer@tulia.id">sonytaka32-beep</author>
+
+  <content src="index.html" />
+
+  <preference name="Fullscreen" value="true" />
+  <preference name="AllowScrolling" value="true" />
+  <preference name="BackupWebStorage" value "none" />
+  <preference name="SplashScreen" value="true" />
+  <preference name="SplashScreenDelay" value="3000" />
+  <preference name="AutoHideSplashScreen" value="true" />
+
+  <icon src="icon.png" />
+  <icon src="www/icon.png" density="mdpi" />
+  <icon src="www/icon.png" density="hdpi" />
+  <icon src="www/icon.png" density="xhdpi" />
+  <icon src="www/icon.png" density="xxhdpi" />
+  <icon src="www/icon.png" density="xxxhdpi" />
+
+  <feature name="Default">
+    <param name="value" name="android-package" />
+  </feature>
+
+  <preference name="android-targetSdkVersion" value="33" />
+
+  <supports-screens
+    androidScreensSmall="true"
+    androidScreensNormal="true"
+    androidScreensLarge="true"
+    androidXLargeScreens="true"
+    anyDensity="true" />
+</widget>

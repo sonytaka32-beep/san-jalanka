@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#FFFFFF">
+  <title>Tulia Jadwal - Aplikasi Notifikasi</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#FFFFFF">
+  <meta name("description" content="Aplikasi notepad dengan fitur jadwal dan notifikasi">
+  
+  <style>
+    /* ===== CSS Variables ===== */
+    :root {
+      --primary-color: #4F46E5;
+      --primary-dark: #3730A3;
+      --secondary-color: #10B981;
+      --background: #F8FAFC;
+      --surface: #FFFFFF;
+      --on-primary: #FFFFFF;
+      --on-surface: #111827;
+      --border-color: #E5E7EB;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --transition-fast: 150ms ease;
+      --transition-normal: 200ms ease;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: #1F2937;
+        --surface: #111827;
+        --on-surface: #F9FAFB;
+        --border-color: #3F4349;
+        --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+        --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.4);
+        --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.4);
+      }
+    }
+
+    /* ===== Base ===== */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--background);
+      color: var(--on-surface);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    /* ===== App Container ===== */
+    .app {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ===== Top Bar ===== */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    .top-bar-title {
+      font-weight: 600;
+      font-size: 18px;
+      color: var(--on-surface);
+      letter-spacing: -0.3px;
+    }
+
+    .top-bar-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .top-bar-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--primary-color);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .top-bar-btn:hover {
+      background: rgba(79, 70, 229, 0.1);
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+    }
+
+    .top-bar-btn:focus {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+    }
+
+    /* ===== Main Content ===== */
+    .main-content {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    /* ===== Note Card ===== */
+    .note-card {
+      background: var(--surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      margin-bottom: 12px;
+      transition: all var(--transition-fast);
+      cursor: pointer;
+    }
+
+    .note-card:hover {
+      border-color: var(--primary-color);
+      box-shadow: var(--shadow-md);
+    }
+
+    .note-card-title {
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--on-surface);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 4px;
+    }
+
+    .note-card-meta {
+      font-size: 12px;
+      color: #6B7280;
+      margin-bottom: 8px;
+    }
+
+    .note-card-preview {
+      font-size: 14px;
+      color: #4B5563;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      line-height: 1.5;
+    }
+
+    /* ===== Editor ===== */
+    .editor-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      z-index: 1000;
+    }
+
+    .editor-window {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      width: 90%;
+      max-width: 400px;
+      max-height: 90%;
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .editor-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--surface);
+    }
+
+    .editor-title-input {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--on-surface);
+      background: transparent;
+      border: none;
+      flex: 1;
+      margin-right: 12px;
+      outline: none;
+    }
+
+    .editor-close-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      color: #6B7280;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .editor-close-btn:hover {
+      color: #EF4444;
+    }
+
+    .editor-content {
+      flex: 1;
+      padding: 20px;
+      min-height: 200px;
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--on-surface);
+      resize: vertical;
+      outline: none;
+    }
+
+    .editor-actions {
+      display: flex;
+      gap: 12px;
+      padding: 12px 20px;
+      border-top: 1px solid var(--border-color);
+      background: var(--surface);
+    }
+
+    .btn-save {
+      flex: 1;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: var(--primary-color);
+      color: var(--on-primary);
+      cursor: pointer;
+      transition: background var(--transition-fast);
+    }
+
+    .btn-save:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-cancel {
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--on-surface);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .btn-cancel:hover {
+      background: var(--border-color);
+    }
+
+    /* ===== FAB ===== */
+    .fab {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 56px;
+      height: 56px;
+      border: none;
+      border-radius: 50%;
+      background: var(--primary-color);
+      color: var(--on-primary);
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      transition: transform var(--transition-fast);
+    }
+
+    .fab:hover {
+      transform: scale(1.08);
+      box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+    }
+
+    .fab:active {
+      transform: scale(0.96);
+    }
+
+    .fab-icon {
+      width: 24px;
+      height: 24px;
+    }
+
+    /* ===== Search ===== */
+    .search-box {
+      position: sticky;
+      top: 80px;
+      z-index: 50;
+      margin: -20px -20px 16px;
+      padding: 12px 20px;
+      background: var(--surface);
+      border-radius: 0 var(--radius-md) var(--radius-md) 0;
+      border: 1px solid var(--border-color);
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 10px 16px;
+      font-size: 14px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      outline: none;
+    }
+
+    .search-input:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+    }
+
+    /* ===== Empty State ===== */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #6B7280;
+    }
+
+    .empty-state svg {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 12px;
+      stroke: #D1D5DB;
+    }
+
+    /* ===== Toast/Notification ===== */
+    .toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 2000;
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .toast-icon {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* ===== Reduced Motion ===== */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Offline Indicator -->
+  <div class="offline-indicator" id="offlineIndicator" style="
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #10B981, #34D399);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+    z-index: 1000;
+  "></div>
+
+  <div class="app">
+    <!-- Search Box -->
+    <div class="search-box" id="searchBox" style="display: none;">
+      <input type="search" class="search-input" id="searchInput" placeholder="Cari catatan..." aria-label="Search notes">
+    </div>
+
+    <!-- Notes List -->
+    <div class="main-content" id="notesMain">
+      <!-- Notes will be rendered here -->
+    </div>
+
+    <!-- FAB -->
+    <button class="fab" id="fabNewNote" aria-label="Buat catatan baru">
+      <svg class="fab-icon" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Editor Overlay -->
+  <div class="editor-overlay" id="editorOverlay" style="display: none;">
+    <div class="editor-window" id="editorWindow">
+      <div class="editor-header">
+        <input type="text" class="editor-title-input" id="editorTitle" placeholder="Judul catatan...">
+        <button class="editor-close-btn" id="editorClose" aria-label="Tutup">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <textarea class="editor-content" id="editorContent" placeholder="Tulis catatan Anda di sini..."></textarea>
+      <div class="editor-actions">
+        <button class="btn-save" id="saveBtn">Simpan</button>
+        <button class="btn-cancel" id="cancelBtn">Batal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast" role="alert" aria-live="polite">
+    <svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 6L9 17l-5-5"/>
+    </svg>
+    <span id="toastMessage">Disimpan</span>
+  </div>
+
+  <script>
+    /* ===== Tulia Jadwal - Notepad PWA ===== */
+
+    // --- State ---
+    let notes = [];
+    let currentNoteId = null;
+    let searchActive = false;
+    let searchQuery = '';
+    let isOnline = navigator.onLine;
+
+    // --- DOM References ---
+    const app = document.querySelector('.app');
+    const notesMain = document.getElementById('notesMain');
+    const fabNewNote = document.getElementById('fabNewNote');
+    const searchBox = document.getElementById('searchBox');
+    const searchInput = document.getElementById('searchInput');
+    const editorOverlay = document.getElementById('editorOverlay');
+    const editorWindow = document.getElementById('editorWindow');
+    const editorTitle = document.getElementById('editorTitle');
+    const editorContent = document.getElementById('editorContent');
+    const saveBtn = document.getElementById('saveBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const editorClose = document.getElementById('editorClose');
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    const offlineIndicator = document.getElementById('offlineIndicator');
+
+    // --- Constants ---
+    const STORAGE_KEY = 'tulia-jadwal-notes';
+    const DEBOUNCE_MS = 300;
+    let saveTimeout = null;
+
+    // --- Utility Functions ---
+    function generateId() {
+      return 'note-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+    }
+
+    function formatDate(date) {
+      const d = new Date(date);
+      const now = new Date();
+      const diff = now - d;
+
+      if (diff < 86400000) { // Today
+        return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+      } else if (diff < 604800000) { // This week
+        const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        return `${days[d.getDay()]} ${d.getDate()} ${getBulan(d.getMonth())}`;
+      } else if (diff < 31536000000) { // This year
+        return `${d.getDate()} ${getBulan(d.getMonth())}`;
+      } else {
+        return `${d.getDate()} ${getBulan(d.getMonth())} ${d.getFullYear()}`;
+      }
+    }
+
+    function getBulan(bulanIndex) {
+      const bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+      return bulan[bulanIndex];
+    }
+
+    function formatFullDateTime(date) {
+      const d = new Date(date);
+      return `${getBulan(d.getMonth())} ${d.getDate()}, ${d.getFullYear()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text || '';
+      return div.innerHTML;
+    }
+
+    function debounce(fn, ms) {
+      let timer;
+      return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn(...args), ms);
+      };
+    }
+
+    // --- Persistence ---
+    function loadNotes() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          notes = JSON.parse(stored);
+          // Ensure all notes have required fields
+          notes.forEach(note => {
+            if (!note.id) note.id = generateId();
+            if (!note.createdAt) note.createdAt = Date.now();
+            if (!note.updatedAt) note.updatedAt = Date.now();
+            if (!note.title) note.title = 'Catatan Baru';
+            if (!note.content) note.content = '';
+            if (!note.jadwal) note.jadwal = '';
+          });
+        }
+      } catch (e) {
+        console.error('Failed to load notes:', e);
+        notes = [];
+      }
+    }
+
+    function saveNotes() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+      } catch (e) {
+        console.error('Failed to save notes:', e);
+      }
+    }
+
+    function debouncedSave() {
+      clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(saveNotes, DEBOUNCE_MS);
+    }
+
+    // --- Render ---
+    function renderNotes() {
+      let filtered = notes;
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        filtered = notes.filter(note =>
+          note.title.toLowerCase().includes(q) ||
+          note.content.toLowerCase().includes(q) ||
+          note.jadwal.toLowerCase().includes(q)
+        );
+      }
+
+      // Sort by updatedAt descending
+      filtered.sort((a, b) => b.updatedAt - a.updatedAt);
+
+      if (filtered.length === 0) {
+        notesMain.innerHTML = `
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+            ${searchQuery ? 'Tidak ada catatan yang cocok dengan pencarian Anda.' : 'Catatan kosong. Klik tombol + untuk membuat catatan baru!'}
+          </div>
+        `;
+        return;
+      }
+
+      notesMain.innerHTML = filtered.map(note => {
+        const preview = note.content.slice(0, 100).replace(/\n/g, ' ');
+        const title = escapeHtml(note.title || 'Tanpa Judul');
+        const jadwal = escapeHtml(note.jadwal || '-');
+        const time = escapeHtml(formatDate(note.updatedAt));
+
+        return `
+          <div class="note-card" data-id="${escapeHtml(note.id)}">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <div class="note-card-title">${title}</div>
+                <div class="note-card-meta">Diperbarui: ${time}</div>
+              </div>
+              <div style="font-size: 11px; color: #6B7280; white-space: nowrap;">
+                ${jadwal}
+              </div>
+            </div>
+            <p class="note-card-preview">${escapeHtml(preview)}</p>
+          </div>
+        `;
+      }).join('');
+
+      // Attach click handlers
+      document.querySelectorAll('.note-card').forEach(card => {
+        card.addEventListener('click', () => openNote(card.dataset.id));
+      });
+    }
+
+    // --- View Management ---
+    function showView(viewName) {
+      if (viewName === 'list') {
+        app.classList.add('list-mode');
+        app.classList.remove('editor-mode');
+        fabNewNote.style.display = 'flex';
+        searchBox.style.display = 'none';
+      } else if (viewName === 'editor') {
+        app.classList.add('editor-mode');
+        app.classList.remove('list-mode');
+        fabNewNote.style.display = 'none';
+        if (currentNoteId) {
+          const note = notes.find(n => n.id === currentNoteId);
+          if (note) {
+            editorTitle.value = note.title;
+            editorContent.value = note.content;
+          }
+        } else {
+          editorTitle.value = '';
+          editorContent.value = '';
+        }
+      }
+    }
+
+    function openNote(id) {
+      const note = notes.find(n => n.id === id);
+      if (!note) return;
+
+      currentNoteId = id;
+      showView('editor');
+      // Focus title after transition
+      setTimeout(() => editorTitle.focus(), 150);
+    }
+
+    function closeEditor() {
+      // Auto-save if there's content changes
+      if (currentNoteId) {
+        saveCurrentNote();
+      }
+      currentNoteId = null;
+      editorTitle.value = '';
+      editorContent.value = '';
+      showView('list');
+    }
+
+    function newNote() {
+      currentNoteId = null;
+      editorTitle.value = '';
+      editorContent.value = '';
+      showView('editor');
+      setTimeout(() => editorTitle.focus(), 150);
+    }
+
+    // --- Note CRUD ---
+    function saveCurrentNote() {
+      const title = editorTitle.value.trim();
+      const content = editorContent.value.trim();
+      const jadwalInput = document.getElementById('jadwalInput') || '';
+      const now = Date.now();
+
+      let jadwal = '';
+      if (currentNoteId) {
+        const note = notes.find(n => n.id === currentNoteId);
+        if (note) {
+          note.title = title;
+          note.content = content;
+          note.updatedAt = now;
+          // Preserve jadwal if exists
+          jadwal = note.jadwal || '';
+        }
+      } else {
+        // Create new
+        const note = {
+          id: generateId(),
+          title,
+          content,
+          jadwal: jadwalInput || '',
+          createdAt: now,
+          updatedAt: now
+        };
+        notes.unshift(note);
+        currentNoteId = note.id;
+        jadwal = note.jadwal;
+      }
+
+      saveNotes();
+      renderNotes();
+      showToast(`Catatan "${title}" ${jadwal ? 'dengan jadwal: ' + jadwal : 'tersimpan'}`);
+    }
+
+    function updateEditorMeta() {
+      // Not needed for this simplified version
+    }
+
+    function deleteNote(id) {
+      const index = notes.findIndex(n => n.id === id);
+      if (index === -1) return;
+
+      notes.splice(index, 1);
+      saveNotes();
+      renderNotes();
+      showToast('Catatan dihapus');
+    }
+
+    function showToast(message) {
+      toastMessage.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 5000);
+    }
+
+    // --- Event Listeners ---
+    function initEvents() {
+      // View switching
+      fabNewNote.addEventListener('click', newNote);
+      cancelBtn.addEventListener('click', closeEditor);
+      editorClose.addEventListener('click', closeEditor);
+      saveBtn.addEventListener('click', saveCurrentNote);
+
+      // Search
+      // Note: search functionality is simplified, toggling search box
+      // In a full implementation, would have search toggle button
+
+      // Editor input handling
+      editorTitle.addEventListener('input', debouncedSave);
+      editorContent.addEventListener('input', debouncedSave);
+
+      // Keyboard shortcuts
+      document.addEventListener('keydown', (e) => {
+        // Escape to close search or go back
+        if (e.key === 'Escape') {
+          if (searchBox.style.display !== 'none') {
+            searchBox.style.display = 'none';
+            searchActive = false;
+            searchQuery = '';
+          } else if (editorOverlay.style.display === 'flex') {
+            closeEditor();
+          }
+        }
+        // Cmd/Ctrl + S to save
+        if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+          e.preventDefault();
+          if (currentNoteId) {
+            saveCurrentNote();
+          }
+        }
+        // Cmd/Ctrl + N for new note
+        if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+          e.preventDefault();
+          if (app.classList.contains('list-mode')) {
+            newNote();
+          }
+        }
+      });
+
+      // Online/Offline
+      window.addEventListener('online', () => {
+        isOnline = true;
+        offlineIndicator.style.transform = 'scaleX(0)';
+      });
+      window.addEventListener('offline', () => {
+        isOnline = false;
+        offlineIndicator.style.transform = 'scaleX(1)';
+      });
+    }
+
+    // --- Initialization ---
+    async function init() {
+      loadNotes();
+      renderNotes();
+      initEvents();
+      updateOnlineStatus();
+
+      // Show editor if coming from new note FAB
+      if (location.hash === '#new-note') {
+        setTimeout(() => newNote(), 300);
+      }
+
+      // Register Service Worker for offline support
+      if ('serviceWorker' in navigator) {
+        try {
+          await navigator.serviceWorker.register('sw.js');
+          console.log('Service Worker registered');
+        } catch (e) {
+          console.warn('SW registration failed:', e);
+        }
+      }
+    }
+
+    function updateOnlineStatus() {
+      isOnline = navigator.onLine;
+      offlineIndicator.style.transform = isOnline ? 'scaleX(0)' : 'scaleX(1)';
+    }
+
+    // Start
+    init();
+  </script>
+</body>
+</html>

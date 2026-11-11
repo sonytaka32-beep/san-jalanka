@@ -1,0 +1,58 @@
+name: CI/CD Pipeline - Cordova Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  cordova-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Cordova CLI
+        run: npm install -g cordova
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Copy web files to www
+        run: |
+          mkdir -p www
+          cp index.html manifest.json sw.js www/
+          cp config.xml www/
+
+      - name: Add Android platform
+        run: |
+          cordova platform add android
+
+      - name: Build APK Debug
+        run: |
+          cordova build android --debug
+          echo "APK built successfully"
+
+      - name: Verify APK Output
+        run: |
+          if [ -f "platforms/android/app/build/outputs/apk/debug/app-debug.apk" ]; then
+            echo "✅ APK debug berhasil dibangun"
+            ls -la platforms/android/app/build/outputs/apk/debug/
+          else
+            echo "❌ APK debug tidak ditemukan"
+            exit 1
+          fi
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tulia-jadwal-apk-debug
+          path: platforms/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
